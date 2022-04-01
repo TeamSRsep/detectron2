@@ -8,7 +8,10 @@ import os
 import pickle
 import sys
 from typing import Any, ClassVar, Dict, List
+from pathlib import Path
 import torch
+print(os.getcwd())
+print(sys.path.append(os.getcwd()))
 
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data.detection_utils import read_image
@@ -284,7 +287,8 @@ class ShowAction(InferenceAction):
         data = extractor(outputs)
         image_vis = visualizer.visualize(image, data)
         entry_idx = context["entry_idx"] + 1
-        out_fname = cls._get_out_fname(entry_idx, context["out_fname"])
+        # out_fname = cls._get_out_fname(entry_idx, context["out_fname"])
+        out_fname = os.path.join(context["out_fname"], Path(image_fpath).stem + '_dp_vertex.png')
         out_dir = os.path.dirname(out_fname)
         if len(out_dir) > 0 and not os.path.exists(out_dir):
             os.makedirs(out_dir)
@@ -310,6 +314,7 @@ class ShowAction(InferenceAction):
             texture_atlas = get_texture_atlas(args.texture_atlas)
             texture_atlases_dict = get_texture_atlases(args.texture_atlases_map)
             vis = cls.VISUALIZERS[vis_spec](
+                inplace=False,
                 cfg=cfg,
                 texture_atlas=texture_atlas,
                 texture_atlases_dict=texture_atlases_dict,
