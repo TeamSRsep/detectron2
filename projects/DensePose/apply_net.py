@@ -97,7 +97,7 @@ class InferenceAction(Action):
         cfg = cls.setup_config(args.cfg, args.model, args, opts)
         logger.info(f"Loading model from {args.model}")
         logger.info(f"Loading data from {args.input}")
-        file_list = cls._get_input_file_list(args.input)
+        file_list = sorted(cls._get_input_file_list(args.input))
         if len(file_list) == 0:
             logger.warning(f"No input images for {args.input}")
             return
@@ -119,7 +119,7 @@ class InferenceAction(Action):
 
                 img_batch.append(read_image(file_name, format="BGR"))
                 file_name_batch.append(file_name)
-                if len(img_batch) == args.batch_size:
+                if len(img_batch) == args.batch_size or file_name==file_list[-1]:
                     with torch.no_grad():
                         outputs_batch = predictor(img_batch)
 
