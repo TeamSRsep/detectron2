@@ -9,13 +9,14 @@ import pickle
 import sys
 from typing import Any, ClassVar, Dict, List
 from pathlib import Path
+from tqdm import tqdm
 import torch
 print(os.getcwd())
 print(sys.path.append(os.getcwd()))
 
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data.detection_utils import read_image
-from detectron2.engine.defaults import DefaultPredictor
+from detectron2.engine.defaults import DefaultPredictor, BatchPredictor
 from detectron2.structures.instances import Instances
 from detectron2.utils.logger import setup_logger
 
@@ -95,18 +96,38 @@ class InferenceAction(Action):
         opts = []
         cfg = cls.setup_config(args.cfg, args.model, args, opts)
         logger.info(f"Loading model from {args.model}")
-        predictor = DefaultPredictor(cfg)
         logger.info(f"Loading data from {args.input}")
         file_list = cls._get_input_file_list(args.input)
         if len(file_list) == 0:
             logger.warning(f"No input images for {args.input}")
             return
         context = cls.create_context(args, cfg)
-        for file_name in file_list:
-            img = read_image(file_name, format="BGR")  # predictor expects BGR image.
-            with torch.no_grad():
-                outputs = predictor(img)["instances"]
-                cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+        if args.batch_size == 1:
+            predictor = DefaultPredictor(cfg)
+
+            for file_name in tqdm(sorted(file_list)):
+                img = read_image(file_name, format="BGR")  # predictor expects BGR image.
+                with torch.no_grad():
+                    outputs = predictor(img)["instances"]
+                    cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+        else:
+            img_batch = []
+            file_name_batch = []
+            predictor = BatchPredictor(cfg)
+
+            for file_name in tqdm(sorted(file_list)):
+
+                img_batch.append(read_image(file_name, format="BGR"))
+                file_name_batch.append(file_name)
+                if len(img_batch) == args.batch_size:
+                    with torch.no_grad():
+                        outputs_batch = predictor(img_batch)
+
+                        for file_name, img, outputs in zip(file_name_batch, img_batch, outputs_batch):
+                            cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs["instances"])
+                    img_batch = []       
+                    file_name_batch = []         
+                    
         cls.postexecute(context)
 
     @classmethod
@@ -258,6 +279,13 @@ class ShowAction(InferenceAction):
             default="outputres.png",
             help="File name to save output to",
         )
+        parser.add_argument(
+            "--batch_size",
+            metavar="<batch_size>",
+            default=1,
+            type=int,
+            help="File name to save output to",
+        )        
 
     @classmethod
     def setup_config(

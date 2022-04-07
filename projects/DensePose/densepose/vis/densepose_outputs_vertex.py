@@ -55,6 +55,7 @@ class DensePoseOutputsVertexVisualizer(object):
         self.embedder = build_densepose_embedder(cfg)
         self.device = torch.device(device)
         self.default_class = default_class
+        self.inplace = inplace
 
         self.mesh_vertex_embeddings = {
             mesh_name: self.embedder(mesh_name).to(self.device)
@@ -70,7 +71,10 @@ class DensePoseOutputsVertexVisualizer(object):
         ],
     ) -> Image:
         if outputs_boxes_xywh_classes[0] is None:
-            return image_bgr
+            if self.inplace:
+                return image_bgr
+            else:
+                return image_bgr * 0
 
         S, E, N, bboxes_xywh, pred_classes = self.extract_and_check_outputs_and_boxes(
             outputs_boxes_xywh_classes
