@@ -13,6 +13,7 @@ import argparse
 import logging
 import os
 import sys
+import time
 import weakref
 from collections import OrderedDict
 from typing import Optional
@@ -324,7 +325,8 @@ class BatchPredictor(DefaultPredictor):
     """
     def __init__(self, cfg):
         super().__init__(cfg)
-
+        # self.model = torch.nn.DataParallel(self.model)
+        self.model = create_ddp_model(self.model, broadcast_buffers=False)
     def __call__(self, original_images):
         """
         Args:
@@ -338,6 +340,7 @@ class BatchPredictor(DefaultPredictor):
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
             inputs = []
+            # t = time.time()
             for original_image in original_images:
                 if self.input_format == "RGB":
                     # whether the model expects BGR inputs or RGB
@@ -346,8 +349,10 @@ class BatchPredictor(DefaultPredictor):
                 image = self.aug.get_transform(original_image).apply_image(original_image)
                 image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
                 inputs.append({"image": image, "height": height, "width": width})
-
+            # print(f'cpu:{time.time()-t}')
+            # t = time.time()
             predictions = self.model(inputs)
+            # print(f'gpu:{time.time()-t}')
             return predictions
 
 class DefaultTrainer(TrainerBase):
