@@ -109,7 +109,7 @@ class InferenceAction(Action):
                 img = read_image(file_name, format="BGR")  # predictor expects BGR image.
                 with torch.no_grad():
                     outputs = predictor(img)["instances"]
-                    cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+                    cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs, args.inplace)
         else:
             img_batch = []
             file_name_batch = []
@@ -124,7 +124,7 @@ class InferenceAction(Action):
                         outputs_batch = predictor(img_batch)
 
                         for file_name, img, outputs in zip(file_name_batch, img_batch, outputs_batch):
-                            cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs["instances"])
+                            cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs["instances"], args.inplace)
                     img_batch = []       
                     file_name_batch = []         
                     
@@ -285,7 +285,12 @@ class ShowAction(InferenceAction):
             default=1,
             type=int,
             help="File name to save output to",
-        )        
+        )      
+        parser.add_argument(
+            "--inplace",
+            action='store_true',
+            help="Set true to overlay on original image",
+        )         
 
     @classmethod
     def setup_config(
@@ -301,7 +306,7 @@ class ShowAction(InferenceAction):
 
     @classmethod
     def execute_on_outputs(
-        cls: type, context: Dict[str, Any], entry: Dict[str, Any], outputs: Instances
+        cls: type, context: Dict[str, Any], entry: Dict[str, Any], outputs: Instances, inplace: bool
     ):
         import cv2
         import numpy as np
@@ -313,6 +318,8 @@ class ShowAction(InferenceAction):
         image = cv2.cvtColor(entry["image"], cv2.COLOR_BGR2GRAY)
         image = np.tile(image[:, :, np.newaxis], [1, 1, 3])
         data = extractor(outputs)
+        if not inplace:
+            image = image*0
         image_vis = visualizer.visualize(image, data)
         entry_idx = context["entry_idx"] + 1
         # out_fname = cls._get_out_fname(entry_idx, context["out_fname"])
@@ -342,7 +349,6 @@ class ShowAction(InferenceAction):
             texture_atlas = get_texture_atlas(args.texture_atlas)
             texture_atlases_dict = get_texture_atlases(args.texture_atlases_map)
             vis = cls.VISUALIZERS[vis_spec](
-                inplace=False,
                 cfg=cfg,
                 texture_atlas=texture_atlas,
                 texture_atlases_dict=texture_atlases_dict,
