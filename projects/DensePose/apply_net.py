@@ -349,6 +349,7 @@ class ShowAction(InferenceAction):
             texture_atlas = get_texture_atlas(args.texture_atlas)
             texture_atlases_dict = get_texture_atlases(args.texture_atlases_map)
             vis = cls.VISUALIZERS[vis_spec](
+                alpha=1,
                 cfg=cfg,
                 texture_atlas=texture_atlas,
                 texture_atlases_dict=texture_atlases_dict,
