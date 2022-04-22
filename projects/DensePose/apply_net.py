@@ -329,7 +329,7 @@ class ShowAction(InferenceAction):
         image_vis = visualizer.visualize(image, data)
         entry_idx = context["entry_idx"] + 1
         # out_fname = cls._get_out_fname(entry_idx, context["out_fname"])
-        out_fname = os.path.join(context["out_fname"], Path(image_fpath).stem + '_dp_vertex.png')
+        out_fname = os.path.join(context["out_fname"], Path(image_fpath).stem + '.png')
         out_dir = os.path.dirname(out_fname)
         if len(out_dir) > 0 and not os.path.exists(out_dir):
             os.makedirs(out_dir)
