@@ -52,11 +52,13 @@ class DensePoseMaskedColormapResultsVisualizer(DensePoseResultsVisualizer):
         inplace=True,
         cmap=cv2.COLORMAP_PARULA,
         alpha=0.7,
+        alpha_complement=None,
         val_scale=1.0,
+        zero_ch=[],
         **kwargs,
     ):
         self.mask_visualizer = MatrixVisualizer(
-            inplace=inplace, cmap=cmap, val_scale=val_scale, alpha=alpha
+            inplace=inplace, cmap=cmap, val_scale=val_scale, alpha=alpha, alpha_complement=alpha_complement, zero_ch=zero_ch
         )
         self.data_extractor = data_extractor
         self.segm_extractor = segm_extractor
@@ -351,5 +353,49 @@ class DensePoseResultsVVisualizer(DensePoseMaskedColormapResultsVisualizer):
             cmap,
             alpha,
             val_scale=1.0,
+            **kwargs,
+        )
+
+class DetectronFineSegmentationVisualizer(DensePoseMaskedColormapResultsVisualizer):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=1.0, alpha_complement=1.0, **kwargs):
+        super(DetectronFineSegmentationVisualizer, self).__init__(
+            _extract_i_from_iuvarr,
+            _extract_i_from_iuvarr,
+            inplace,
+            None,
+            alpha,
+            alpha_complement,
+            val_scale=1.0,
+            zero_ch=[1, 2],
+            **kwargs,
+        )
+
+
+class DetectronUVisualizer(DensePoseMaskedColormapResultsVisualizer):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=1.0, alpha_complement=1.0, **kwargs):
+        super(DetectronUVisualizer, self).__init__(
+            _extract_u_from_iuvarr,
+            _extract_i_from_iuvarr,
+            inplace,
+            None,
+            alpha,
+            alpha_complement,
+            val_scale=1.0,
+            zero_ch=[0, 2],
+            **kwargs,
+        )
+
+
+class DetectronVVisualizer(DensePoseMaskedColormapResultsVisualizer):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=1.0, alpha_complement=1.0, **kwargs):
+        super(DetectronVVisualizer, self).__init__(
+            _extract_v_from_iuvarr,
+            _extract_i_from_iuvarr,
+            inplace,
+            None,
+            alpha,
+            alpha_complement,
+            val_scale=1.0,
+            zero_ch=[0, 1],
             **kwargs,
         )

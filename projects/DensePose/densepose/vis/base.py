@@ -19,15 +19,22 @@ class MatrixVisualizer(object):
         cmap=cv2.COLORMAP_PARULA,
         val_scale=1.0,
         alpha=0.7,
+        alpha_complement=None,
         interp_method_matrix=cv2.INTER_LINEAR,
         interp_method_mask=cv2.INTER_NEAREST,
+        zero_ch=[],
     ):
         self.inplace = inplace
         self.cmap = cmap
         self.val_scale = val_scale
         self.alpha = alpha
+        if alpha_complement is None:
+            self.alpha_complement = 1 - alpha
+        else:
+            self.alpha_complement = alpha_complement
         self.interp_method_matrix = interp_method_matrix
         self.interp_method_mask = interp_method_mask
+        self.zero_ch = zero_ch
 
     def visualize(self, image_bgr, mask, matrix, bbox_xywh):
         self._check_image(image_bgr)
@@ -49,10 +56,17 @@ class MatrixVisualizer(object):
                 f"Matrix has values > {255 + _EPSILON} after " f"scaling, clipping to [0..255]"
             )
         matrix_scaled_8u = matrix_scaled.clip(0, 255).astype(np.uint8)
-        matrix_vis = cv2.applyColorMap(matrix_scaled_8u, self.cmap)
+        if self.cmap:
+            matrix_vis = cv2.applyColorMap(matrix_scaled_8u, self.cmap)
+        else:
+            matrix_vis = np.stack([matrix_scaled_8u, matrix_scaled_8u, matrix_scaled_8u], axis=-1) 
         matrix_vis[mask_bg] = image_target_bgr[y : y + h, x : x + w, :][mask_bg]
+        
+        for ch in self.zero_ch:
+            matrix_vis[:, :, ch] = 0
+        
         image_target_bgr[y : y + h, x : x + w, :] = (
-            image_target_bgr[y : y + h, x : x + w, :] * (1.0 - self.alpha) + matrix_vis * self.alpha
+            image_target_bgr[y : y + h, x : x + w, :] * self.alpha_complement + matrix_vis * self.alpha
         )
         return image_target_bgr.astype(np.uint8)
 

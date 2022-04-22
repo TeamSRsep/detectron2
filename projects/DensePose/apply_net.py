@@ -35,6 +35,9 @@ from densepose.vis.densepose_results import (
     DensePoseResultsFineSegmentationVisualizer,
     DensePoseResultsUVisualizer,
     DensePoseResultsVVisualizer,
+    DetectronFineSegmentationVisualizer,
+    DetectronUVisualizer,
+    DetectronVVisualizer
 )
 from densepose.vis.densepose_results_textures import (
     DensePoseResultsVisualizerWithTexture,
@@ -234,6 +237,9 @@ class ShowAction(InferenceAction):
         "dp_cse_texture": DensePoseOutputsTextureVisualizer,
         "dp_vertex": DensePoseOutputsVertexVisualizer,
         "bbox": ScoredBoundingBoxVisualizer,
+        "det_segm": DetectronFineSegmentationVisualizer,
+        "det_u": DetectronUVisualizer,
+        "det_v": DetectronVVisualizer,
     }
 
     @classmethod
@@ -349,7 +355,6 @@ class ShowAction(InferenceAction):
             texture_atlas = get_texture_atlas(args.texture_atlas)
             texture_atlases_dict = get_texture_atlases(args.texture_atlases_map)
             vis = cls.VISUALIZERS[vis_spec](
-                alpha=1,
                 cfg=cfg,
                 texture_atlas=texture_atlas,
                 texture_atlases_dict=texture_atlases_dict,
