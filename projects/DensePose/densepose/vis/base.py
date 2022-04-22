@@ -22,7 +22,7 @@ class MatrixVisualizer(object):
         alpha_complement=None,
         interp_method_matrix=cv2.INTER_LINEAR,
         interp_method_mask=cv2.INTER_NEAREST,
-        zero_ch=[],
+        color_ch=None,
     ):
         self.inplace = inplace
         self.cmap = cmap
@@ -34,7 +34,7 @@ class MatrixVisualizer(object):
             self.alpha_complement = alpha_complement
         self.interp_method_matrix = interp_method_matrix
         self.interp_method_mask = interp_method_mask
-        self.zero_ch = zero_ch
+        self.color_ch = color_ch
 
     def visualize(self, image_bgr, mask, matrix, bbox_xywh):
         self._check_image(image_bgr)
@@ -58,16 +58,21 @@ class MatrixVisualizer(object):
         matrix_scaled_8u = matrix_scaled.clip(0, 255).astype(np.uint8)
         if self.cmap:
             matrix_vis = cv2.applyColorMap(matrix_scaled_8u, self.cmap)
+            matrix_vis[mask_bg] = image_target_bgr[y : y + h, x : x + w, :][mask_bg]
+            
+            image_target_bgr[y : y + h, x : x + w, :] = (
+                image_target_bgr[y : y + h, x : x + w, :] * self.alpha_complement + matrix_vis * self.alpha
+            )            
         else:
-            matrix_vis = np.stack([matrix_scaled_8u, matrix_scaled_8u, matrix_scaled_8u], axis=-1) 
-        matrix_vis[mask_bg] = image_target_bgr[y : y + h, x : x + w, :][mask_bg]
+            assert(self.color_ch is not None)
+            matrix_vis = np.stack([matrix_scaled_8u, matrix_scaled_8u, matrix_scaled_8u], axis=-1) * 0            
+            matrix_vis[:, :, self.color_ch] = matrix_scaled_8u
+            image_target_bgr[y : y + h, x : x + w, self.color_ch] = (
+                image_target_bgr[y : y + h, x : x + w, self.color_ch] * self.alpha_complement + matrix_vis[:, :, self.color_ch] * self.alpha
+            )                 
+
+            assert (image_target_bgr[:, :, 0] >= 0).all() and (image_target_bgr[:, :, 0] < 25).all()
         
-        for ch in self.zero_ch:
-            matrix_vis[:, :, ch] = 0
-        
-        image_target_bgr[y : y + h, x : x + w, :] = (
-            image_target_bgr[y : y + h, x : x + w, :] * self.alpha_complement + matrix_vis * self.alpha
-        )
         return image_target_bgr.astype(np.uint8)
 
     def _resize(self, mask, matrix, w, h):
