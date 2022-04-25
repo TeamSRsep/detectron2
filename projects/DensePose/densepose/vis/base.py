@@ -48,6 +48,8 @@ class MatrixVisualizer(object):
             return image_bgr
         mask, matrix = self._resize(mask, matrix, w, h)
         mask_bg = np.tile((mask == 0)[:, :, np.newaxis], [1, 1, 3])
+        mask_fg = np.logical_not(mask_bg[:, :, 0])
+        
         matrix_scaled = matrix.astype(np.float32) * self.val_scale
         _EPSILON = 1e-6
         if np.any(matrix_scaled > 255 + _EPSILON):
@@ -67,8 +69,8 @@ class MatrixVisualizer(object):
             assert(self.color_ch is not None)
             matrix_vis = np.stack([matrix_scaled_8u, matrix_scaled_8u, matrix_scaled_8u], axis=-1) * 0            
             matrix_vis[:, :, self.color_ch] = matrix_scaled_8u
-            image_target_bgr[y : y + h, x : x + w, self.color_ch] = (
-                image_target_bgr[y : y + h, x : x + w, self.color_ch] * self.alpha_complement + matrix_vis[:, :, self.color_ch] * self.alpha
+            image_target_bgr[y : y + h, x : x + w, self.color_ch][mask_fg] = (
+                image_target_bgr[y : y + h, x : x + w, self.color_ch][mask_fg] * self.alpha_complement + matrix_vis[:, :, self.color_ch][mask_fg] * self.alpha
             )                 
 
             assert (image_target_bgr[:, :, 0] >= 0).all() and (image_target_bgr[:, :, 0] < 25).all()
