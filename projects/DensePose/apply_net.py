@@ -12,7 +12,7 @@ from pathlib import Path
 from tqdm import tqdm
 import torch
 print(os.getcwd())
-print(sys.path.append(os.getcwd()))
+sys.path.append(os.getcwd())
 
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data.detection_utils import read_image
@@ -105,6 +105,7 @@ class InferenceAction(Action):
             logger.warning(f"No input images for {args.input}")
             return
         context = cls.create_context(args, cfg)
+
         if args.batch_size == 1:
             predictor = DefaultPredictor(cfg)
 
@@ -112,7 +113,10 @@ class InferenceAction(Action):
                 img = read_image(file_name, format="BGR")  # predictor expects BGR image.
                 with torch.no_grad():
                     outputs = predictor(img)["instances"]
-                    cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs, args.inplace)
+                    if cls.__name__ == 'DumpAction':
+                        cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+                    else:
+                        cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs, args.inplace)
         else:
             img_batch = []
             file_name_batch = []
@@ -185,6 +189,13 @@ class DumpAction(InferenceAction):
             default="results.pkl",
             help="File name to save dump to",
         )
+        parser.add_argument(
+            "--batch_size",
+            metavar="<batch_size>",
+            default=1,
+            type=int,
+            help="File name to save output to",
+        )          
 
     @classmethod
     def execute_on_outputs(
