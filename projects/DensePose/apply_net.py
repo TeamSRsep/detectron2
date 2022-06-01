@@ -229,7 +229,6 @@ class DumpAction(InferenceAction):
         if len(out_dir) > 0 and not os.path.exists(out_dir):
             os.makedirs(out_dir)
         with open(out_fname, "wb") as hFile:
-            print('hello')
             compress_pickle.dump(context["results"], hFile)
             logger.info(f"Output saved to {out_fname}")
 
